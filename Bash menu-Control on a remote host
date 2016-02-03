@@ -1,0 +1,96 @@
+#!/bin/bash
+
+MAIN_FOLDER="/opt/script"
+VMWARE_FILE="VMwareTools-9.10.5-2981885.tar.gz"
+
+clear
+#This script can create, copy and run any command on the remote host.
+
+cat "/opt/script/addon"
+
+printf "\n\e[36mType the hostname/IP Address of the remote host\e[0m :\n"
+
+#Input the remote host IP address
+read -e -p ">>> " HOST 
+
+#Check if pub key exist.
+if [ -f "/root/.ssh/id_rsa.pub" ]; then
+	#Define an SSH keys on the remote server.
+	ssh-copy-id -i ~/.ssh/id_rsa.pub $HOST
+else
+	printf "\n\e[91mYou do not have a public key.\nPlease create a new public key for the SSH.\e[0m\n\n"
+	`ssh-keygen -t rsa -b 1024`
+	ssh-copy-id -i ~/.ssh/id_rsa.pub $HOST
+fi
+printf "\n\n\e[33m $HOST has been added to your trusted servers and set up keys\e[0m \n\n"
+
+options() {
+	printf "\nWhat would you like to do :\n"
+	printf "[1] Install VMtools on the remote host.\n"
+	printf "[2] Run a single command on the remote host.\n"
+	printf "[3] Connect to the remote host by SSH session.\n"
+	printf "[4] Replace the Remote host\n"
+	printf "[5] Exit.\n\n"
+	printf " Type a number between [1-5] "
+
+	read -e -p ": " MENU
+	menu_choice
+}
+
+vminstall() {
+                wget --user=corp-it --password='Kaltura12#' ftp://192.168.192.150/vmware/vmtools.sh
+                chmod 777 vmtools.sh
+		mv vmtools.sh $MAIN_FOLDER
+		cd $MAIN_FOLDER
+	}
+
+
+
+menu_choice() {
+if [ $MENU = 1 ]; then
+	if [ -f "$MAIN_FOLDER/vmtools.sh" ];then
+		printf "\n VM files are exist"
+		cd $MAIN_FOLDER
+		chmod 777 vmtools.sh
+		printf "\nCopying files to the remoted host . . .\n\n"
+		scp vmtools.sh root@$HOST:/opt
+
+		printf "\nInstalling VMtools on remoted host\n"
+		ssh root@$HOST "bash -s" < ./vmtools.sh
+		exit
+	else
+		vminstall
+
+		printf "\nCopying files to the remoted host . . .\n\n"
+		scp $VMWARE_FILE vmtools.sh root@$HOST:/opt
+                printf "\nInstalling VMtools on remoted host\n"
+		ssh root@$HOST "bash -s" < ./vmtools.sh
+	fi
+elif [ $MENU = 2 ]; then
+	printf "\nType the command\n"
+	read -e -p ">>> " COMMAND
+	ssh root@$HOST $COMMAND
+	options
+
+elif [ $MENU = 3 ]; then
+	ssh $HOST
+	options
+
+elif [ $MENU = 4 ]; then
+	clear
+	printf "\n\e[36mType the hostname/IP Address of the remote host\e[0m :\n"
+
+	#Input the remote host IP address
+	read -e -p ">>> " HOST
+
+	ssh-copy-id \-i ~/.ssh/id_rsa.pub $HOST
+	options
+	
+elif [ $MENU = 5 ]; then
+	printf "\n\e[44mBye !\e[0m\n\n"
+	exit	
+fi
+}
+
+options
+menu_choice
