@@ -1,0 +1,84 @@
+#!/bin/bash
+VMWARE_FILE="VMwareTools-9.10.5-2981885.tar.gz"
+VMWARE=`vmware-toolbox-cmd -v > /tmp/vmversion`
+VM_FILE="9.10.5*"
+ET=`echo $?`
+VMKEY="VMWARE-PACKAGING-GPG-RSA-KEY.pub"
+OS="CentOS"
+
+installvm() {
+            cd /opt && mv $VMWARE_FILE /tmp
+            cd /tmp
+            tar -zxvf $VMWARE_FILE
+            cd /tmp/vmware-tools-distrib
+            printf "\nInstalling VMtools\n"
+            ./vmware-install.pl --default
+            /etc/vmware-tools/services.sh start
+}
+
+
+vmtools() {
+        if [ -f /etc/vmware-tools/services.sh ]; then
+                cat /tmp/vmversion |grep $VM_FILE
+                ET=`echo $?`
+
+                if (("$ET" == "0")); then
+                        printf "\n\e[32mVMtools is up to date\e[0m\n\n"
+                        exit
+                        printf "\nEXIT"
+
+                else
+                        printf "\n\e[31mYour VMTOOLS is not updated\e[0m\n"
+                        cd /opt
+                        tar -zxf VMwareTools-$VM_FILE.tar.gz -C /tmp
+                        installvm
+
+                        # The installation repeat her self twice ,VMtools not working well and have to be removed.         #
+                        # And by running the installation again the VMtools will be removed and Re installed from scratch. #
+
+                       installvm
+                fi
+
+        else
+
+                printf "\n\e[31mYou don't have VMtools installed\e[0m"
+                installvm
+
+                echo "\e[32mInstallation is complete  !\e[0m"
+                printf "\n\e[32mStarting VMtools services. . .\e[0m\n"
+                /etc/vmware-tools/services.sh start
+
+
+        fi
+}
+
+
+ubuntu() {
+        cd /opt
+        wget --user=corp-it --password='Kaltura12#' ftp://192.168.192.150/vmware/$VMKEY
+        echo deb http://packages.vmware.com/packages/ubuntu precise main >> /etc/apt/sources.list.d/vmware-tools.list
+        apt-get update -y
+        apt-get install open-vm-tools-deploypkg -y --force-yes
+}
+
+# Get the VMware installation file #
+wget --user=corp-it --password='Kaltura12#' ftp://192.168.192.150/vmware/$VMWARE_FILE
+chmod 777 $VMWARE_FILE
+mv $VMWARE_FILE /opt
+
+# Determine what is the Operation System version #
+
+cat /etc/*release |grep CentOS
+ET=`echo $?`
+
+if (("$ET" == "0")); then
+        vmtools
+else
+
+        cat /etc/*release |grep Ubuntu
+        if (("$ET" == "0")); then
+                ubuntu
+        else
+                vmtools
+        fi
+fi
