@@ -38,8 +38,8 @@ options() {
 }
 
 vminstall() {
-                wget --user=corp-it --password='Kaltura12#' ftp://192.168.192.150/vmware/vmtools.sh
-                chmod 777 vmtools.sh
+                wget --user=corp-it --password='******' ftp://192.168.192.150/vmware/vmtools.sh
+                chmod 755 vmtools.sh
 		mv vmtools.sh $MAIN_FOLDER
 		cd $MAIN_FOLDER
 	}
